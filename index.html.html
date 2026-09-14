@@ -115,6 +115,18 @@
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Animação do Brilho do Ki Azul */
+        @keyframes kiPulseBlue {
+            0%, 100% { box-shadow: 0 0 6px #38bdf8, 0 0 12px #0284c7; transform: scale(1); }
+            50% { box-shadow: 0 0 10px #7dd3fc, 0 0 18px #38bdf8; transform: scale(1.1); }
+        }
+
+        .ki-orb-active-blue {
+            background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 50%, #0284c7 100%);
+            border-color: #bae6fd;
+            animation: kiPulseBlue 2s infinite ease-in-out;
+        }
+
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -337,7 +349,7 @@
     </div>
 
     <script>
-        // Configuração do Firebase com suas chaves
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyALj_2CsTJuYXQM6xSFGkhB0t1VZ1r7aEI",
             authDomain: "dragon-ball-all-time.firebaseapp.com",
@@ -354,11 +366,11 @@
         const stateRef = db.ref('battleState');
 
         const defaultParty = [
-            { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20 },
-            { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20 },
-            { id: 2, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20 },
-            { id: 3, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20 },
-            { id: 4, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20 }
+            { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 2, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 3, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 4, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 }
         ];
 
         const defaultEnemy = {
@@ -418,6 +430,20 @@
             db.ref(`battleState/party/${idx}`).set(party[idx]);
         }
 
+        // Alteração de Ki com ajuste dinâmico relativo ou absoluto
+        function adjustPlayerKi(idx, delta) {
+            const currentKi = Number(party[idx].ki) || 0;
+            const newKi = Math.max(0, Math.min(8, currentKi + delta));
+            party[idx].ki = newKi;
+            db.ref(`battleState/party/${idx}/ki`).set(newKi);
+        }
+
+        function setPlayerKi(idx, kiAmount) {
+            const newKi = Math.max(0, Math.min(8, Number(kiAmount) || 0));
+            party[idx].ki = newKi;
+            db.ref(`battleState/party/${idx}/ki`).set(newKi);
+        }
+
         function updateEnemyProp(prop, val) {
             if (prop === 'name' || prop === 'img') enemy[prop] = val;
             else if (prop === 'crit') enemy[prop] = val;
@@ -463,6 +489,18 @@
                     card.querySelector('.hp-text-display').innerText = `${Math.round(p.currentHp)} / ${p.hpMax}`;
                     card.querySelector('.hp-bar-fill').style.width = `${hpPercent}%`;
                     card.querySelector('.player-avatar-img').src = p.img;
+
+                    // Atualizar Ki Display Azul
+                    const kiVal = Number(p.ki) || 0;
+                    card.querySelector('.ki-count-text').innerText = `${kiVal}/8`;
+                    const orbs = card.querySelectorAll('.ki-orb');
+                    orbs.forEach((orb, orbIdx) => {
+                        if (orbIdx < kiVal) {
+                            orb.className = 'ki-orb w-3.5 h-3.5 rounded-full border border-sky-300 transition-all duration-300 cursor-pointer ki-orb-active-blue';
+                        } else {
+                            orb.className = 'ki-orb w-3.5 h-3.5 rounded-full border border-slate-700 bg-slate-950/80 transition-all duration-300 cursor-pointer hover:border-sky-500/50';
+                        }
+                    });
                 }
             });
         }
@@ -530,7 +568,7 @@
             }
         }
 
-        // --- ACOES DE JOGO ---
+        // --- AÇÕES DE JOGO ---
         function healEnemy() {
             const pct = parseFloat(document.getElementById('enemy-heal-pct').value) || 0;
             if (pct <= 0) return;
@@ -628,6 +666,7 @@
             party.forEach((p, idx) => {
                 const stats = calcPlayerStats(p);
                 const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
+                const kiVal = Number(p.ki) || 0;
 
                 const cardHtml = `
                     <div id="player-card-${p.id}" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl relative transition-all duration-300 hover:border-slate-700">
@@ -671,6 +710,28 @@
                                     <button onclick="promptPlayerImageURL(${idx})" class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[9px] py-1 font-bold transition flex items-center justify-center gap-0.5 shadow">
                                         <i class="fa-solid fa-link"></i> URL
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- CONTADOR DE KI AZUL (MÁXIMO 8 ESFERAS) -->
+                            <div class="bg-slate-950/70 border border-sky-500/20 p-2 rounded-xl space-y-1.5 shadow-inner">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-sky-400 flex items-center gap-1 uppercase tracking-wider">
+                                        <i class="fa-solid fa-bolt text-sky-400"></i> Ki
+                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button onclick="adjustPlayerKi(${idx}, -1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">-</button>
+                                        <span class="ki-count-text text-xs font-mono font-extrabold text-sky-400">${kiVal}/8</span>
+                                        <button onclick="adjustPlayerKi(${idx}, 1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">+</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between gap-1 pt-0.5">
+                                    ${[1, 2, 3, 4, 5, 6, 7, 8].map(i => `
+                                        <div onclick="setPlayerKi(${idx}, ${i})" title="Definir Ki para ${i}" 
+                                             class="ki-orb w-3.5 h-3.5 rounded-full border ${i <= kiVal ? 'border-sky-300 ki-orb-active-blue' : 'border-slate-700 bg-slate-950/80'} transition-all duration-300 cursor-pointer hover:border-sky-500/50">
+                                        </div>
+                                    `).join('')}
                                 </div>
                             </div>
 

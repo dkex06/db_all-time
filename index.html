@@ -79,6 +79,17 @@
             animation: flashGreen 0.5s ease-out;
         }
 
+        /* Animação de Consumo de Ki Máximo */
+        @keyframes kiRelease {
+            0% { filter: brightness(1) drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
+            50% { filter: brightness(2.5) drop-shadow(0 0 35px rgba(245, 158, 11, 1)); transform: scale(1.02); }
+            100% { filter: brightness(1) drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
+        }
+
+        .animate-ki-release {
+            animation: kiRelease 0.6s ease-out;
+        }
+
         @keyframes floatUpFade {
             0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
             20% { opacity: 1; transform: translate(-50%, -20px) scale(1.3); }
@@ -111,20 +122,8 @@
             text-shadow: 0 0 12px rgba(16, 185, 129, 0.9), 0 2px 4px rgba(0,0,0,1);
         }
 
-        .hp-bar-fill {
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Animação do Brilho do Ki Azul */
-        @keyframes kiPulseBlue {
-            0%, 100% { box-shadow: 0 0 6px #38bdf8, 0 0 12px #0284c7; transform: scale(1); }
-            50% { box-shadow: 0 0 10px #7dd3fc, 0 0 18px #38bdf8; transform: scale(1.1); }
-        }
-
-        .ki-orb-active-blue {
-            background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 50%, #0284c7 100%);
-            border-color: #bae6fd;
-            animation: kiPulseBlue 2s infinite ease-in-out;
+        .hp-bar-fill, .ki-bar-fill {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
         }
 
         ::-webkit-scrollbar {
@@ -200,10 +199,6 @@
                         <div class="relative w-full max-w-[200px] aspect-[3/4] rounded-xl overflow-hidden border-2 border-red-600/50 shadow-xl group">
                             <img id="enemy-img" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10" alt="Inimigo" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                             <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
-                            
-                            <span class="absolute top-2 left-2 bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow">
-                                Chefe
-                            </span>
 
                             <div class="absolute bottom-2 left-2 right-2 flex gap-1">
                                 <label class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] py-1 text-center font-bold cursor-pointer transition flex items-center justify-center gap-1 shadow">
@@ -365,6 +360,8 @@
         const db = firebase.database();
         const stateRef = db.ref('battleState');
 
+        const MAX_KI = 20;
+
         const defaultParty = [
             { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
             { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
@@ -430,16 +427,16 @@
             db.ref(`battleState/party/${idx}`).set(party[idx]);
         }
 
-        // Alteração de Ki com ajuste dinâmico relativo ou absoluto
+        // Alteração de Ki progressivo (0 a 20)
         function adjustPlayerKi(idx, delta) {
             const currentKi = Number(party[idx].ki) || 0;
-            const newKi = Math.max(0, Math.min(8, currentKi + delta));
+            const newKi = Math.max(0, Math.min(MAX_KI, currentKi + delta));
             party[idx].ki = newKi;
             db.ref(`battleState/party/${idx}/ki`).set(newKi);
         }
 
-        function setPlayerKi(idx, kiAmount) {
-            const newKi = Math.max(0, Math.min(8, Number(kiAmount) || 0));
+        function setPlayerKiDirect(idx, val) {
+            const newKi = Math.max(0, Math.min(MAX_KI, Number(val) || 0));
             party[idx].ki = newKi;
             db.ref(`battleState/party/${idx}/ki`).set(newKi);
         }
@@ -490,17 +487,22 @@
                     card.querySelector('.hp-bar-fill').style.width = `${hpPercent}%`;
                     card.querySelector('.player-avatar-img').src = p.img;
 
-                    // Atualizar Ki Display Azul
+                    // Atualizar Barra de Ki Gradual (0 a 20)
                     const kiVal = Number(p.ki) || 0;
-                    card.querySelector('.ki-count-text').innerText = `${kiVal}/8`;
-                    const orbs = card.querySelectorAll('.ki-orb');
-                    orbs.forEach((orb, orbIdx) => {
-                        if (orbIdx < kiVal) {
-                            orb.className = 'ki-orb w-3.5 h-3.5 rounded-full border border-sky-300 transition-all duration-300 cursor-pointer ki-orb-active-blue';
-                        } else {
-                            orb.className = 'ki-orb w-3.5 h-3.5 rounded-full border border-slate-700 bg-slate-950/80 transition-all duration-300 cursor-pointer hover:border-sky-500/50';
-                        }
-                    });
+                    const kiInput = card.querySelector('.ki-input-field');
+                    if (kiInput && document.activeElement !== kiInput) {
+                        kiInput.value = kiVal;
+                    }
+
+                    const kiBarFill = card.querySelector('.ki-bar-fill');
+                    const kiPercent = Math.max(0, Math.min(100, (kiVal / MAX_KI) * 100));
+                    kiBarFill.style.width = `${kiPercent}%`;
+
+                    if (kiVal >= MAX_KI) {
+                        kiBarFill.className = 'ki-bar-fill h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg shadow-amber-400/80';
+                    } else {
+                        kiBarFill.className = 'ki-bar-fill h-full bg-gradient-to-r from-sky-500 to-blue-400 rounded-full shadow-lg shadow-sky-500/50';
+                    }
                 }
             });
         }
@@ -612,6 +614,15 @@
             updateEnemyProp('currentHp', enemy.currentHp);
             triggerDamageVisual('enemy-card', finalDamage, p.crit);
 
+            // Verificação de Consumo de Ki Máximo
+            const currentKi = Number(p.ki) || 0;
+            if (currentKi >= MAX_KI) {
+                p.ki = 0;
+                db.ref(`battleState/party/${playerIdx}/ki`).set(0);
+                triggerKiReleaseVisual(`player-card-${p.id}`);
+                addLog(`🔥 <b>${p.name}</b> LIBEROU TODO O KI (20/20) NO ATAQUE! Ki resetado para 0.`);
+            }
+
             addLog(`⚔️ <b>${p.name}</b> atacou <b>${enemy.name}</b> causando <span class="text-red-400 font-bold">${finalDamage}</span> de dano! ${p.crit ? '<span class="text-amber-400 font-bold">(CRÍTICO!)</span>' : ''}`);
         }
 
@@ -667,6 +678,7 @@
                 const stats = calcPlayerStats(p);
                 const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
                 const kiVal = Number(p.ki) || 0;
+                const kiPercent = Math.max(0, Math.min(100, (kiVal / MAX_KI) * 100));
 
                 const cardHtml = `
                     <div id="player-card-${p.id}" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl relative transition-all duration-300 hover:border-slate-700">
@@ -713,25 +725,22 @@
                                 </div>
                             </div>
 
-                            <!-- CONTADOR DE KI AZUL (MÁXIMO 8 ESFERAS) -->
+                            <!-- CONTADOR E BARRA PROGRESSIVA DE KI (0 a 20) -->
                             <div class="bg-slate-950/70 border border-sky-500/20 p-2 rounded-xl space-y-1.5 shadow-inner">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[10px] font-bold text-sky-400 flex items-center gap-1 uppercase tracking-wider">
                                         <i class="fa-solid fa-bolt text-sky-400"></i> Ki
                                     </span>
-                                    <div class="flex items-center gap-1.5">
+                                    <div class="flex items-center gap-1">
                                         <button onclick="adjustPlayerKi(${idx}, -1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">-</button>
-                                        <span class="ki-count-text text-xs font-mono font-extrabold text-sky-400">${kiVal}/8</span>
+                                        <input type="number" min="0" max="20" value="${kiVal}" onchange="setPlayerKiDirect(${idx}, this.value)" class="ki-input-field w-8 bg-slate-900 border border-slate-700 rounded text-center text-xs font-mono font-bold text-sky-400 p-0 focus:outline-none focus:border-sky-500">
+                                        <span class="text-[10px] font-mono text-slate-500 font-bold">/20</span>
                                         <button onclick="adjustPlayerKi(${idx}, 1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">+</button>
                                     </div>
                                 </div>
                                 
-                                <div class="flex items-center justify-between gap-1 pt-0.5">
-                                    ${[1, 2, 3, 4, 5, 6, 7, 8].map(i => `
-                                        <div onclick="setPlayerKi(${idx}, ${i})" title="Definir Ki para ${i}" 
-                                             class="ki-orb w-3.5 h-3.5 rounded-full border ${i <= kiVal ? 'border-sky-300 ki-orb-active-blue' : 'border-slate-700 bg-slate-950/80'} transition-all duration-300 cursor-pointer hover:border-sky-500/50">
-                                        </div>
-                                    `).join('')}
+                                <div class="w-full h-2.5 bg-slate-950 rounded-full border border-slate-800 overflow-hidden p-0.5 relative">
+                                    <div class="ki-bar-fill h-full ${kiVal >= MAX_KI ? 'bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg shadow-amber-400/80' : 'bg-gradient-to-r from-sky-500 to-blue-400 rounded-full shadow-lg shadow-sky-500/50'}" style="width: ${kiPercent}%"></div>
                                 </div>
                             </div>
 
@@ -853,6 +862,15 @@
 
             el.appendChild(floatNum);
             setTimeout(() => { floatNum.remove(); }, 1200);
+        }
+
+        function triggerKiReleaseVisual(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            el.classList.remove('animate-ki-release');
+            void el.offsetWidth;
+            el.classList.add('animate-ki-release');
         }
 
         function addLog(message) {

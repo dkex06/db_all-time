@@ -79,7 +79,6 @@
             animation: flashGreen 0.5s ease-out;
         }
 
-        /* Animação de Consumo de Ki Máximo */
         @keyframes kiRelease {
             0% { filter: brightness(1) drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
             50% { filter: brightness(2.5) drop-shadow(0 0 35px rgba(245, 158, 11, 1)); transform: scale(1.02); }
@@ -156,7 +155,7 @@
                         Dragon Ball All-Time
                     </h1>
                     <div class="flex items-center gap-2">
-                        <p class="text-xs text-slate-400">Calculadora de Batalha</p>
+                        <p class="text-xs text-slate-400">Calculadora e Painel de Batalha</p>
                         <span id="sync-status" class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
                             🟢 Conectado ao Firebase
                         </span>
@@ -171,7 +170,7 @@
                 </button>
                 <div class="text-center min-w-[90px]">
                     <span class="text-xs uppercase tracking-widest text-slate-500 font-bold block">Turno</span>
-                    <span id="turn-display" class="text-2xl font-black text-purple-400">1</span>
+                    <span id="turn-display" class="text-2xl font-black text-purple-400">0</span>
                 </div>
                 <button onclick="changeTurn(1)" class="w-9 h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition active:scale-95">
                     <i class="fa-solid fa-chevron-right"></i>
@@ -343,6 +342,33 @@
 
     </div>
 
+    <!-- MODAL DE ROLAGEM DE DADOS DO TURNO -->
+    <div id="dice-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-6">
+            <div class="text-center space-y-1">
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-purple-400 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-dice text-amber-400"></i> Dados de Ki do Novo Turno
+                </h2>
+                <p class="text-xs text-slate-400">Selecione um dado e escolha qual personagem irá recebê-lo como Ki adicional.</p>
+            </div>
+
+            <!-- Dados Rolados -->
+            <div id="dice-container" class="flex flex-wrap justify-center gap-3">
+                <!-- JS preenche os dados -->
+            </div>
+
+            <!-- Seleção de Alvo -->
+            <div id="target-section" class="space-y-3 hidden border-t border-slate-800 pt-4">
+                <p class="text-xs font-bold text-slate-300 text-center uppercase tracking-wider">
+                    Entregar o Dado de Ki ao Personagem:
+                </p>
+                <div id="target-container" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <!-- JS preenche os alvos disponíveis -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuração do Firebase
         const firebaseConfig = {
@@ -386,16 +412,21 @@
             img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10"
         };
 
-        let turn = 1;
+        let turn = 0;
         let party = JSON.parse(JSON.stringify(defaultParty));
         let enemy = JSON.parse(JSON.stringify(defaultEnemy));
         let isFirstLoad = true;
+
+        // Estado do evento de dados
+        let activeDice = [];
+        let selectedDiceIdx = null;
+        let assignedPlayers = new Set();
 
         // --- SINCRONIZAÇÃO COM FIREBASE ---
         stateRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                turn = data.turn ?? 1;
+                turn = data.turn ?? 0;
                 party = data.party ?? party;
                 enemy = data.enemy ?? enemy;
                 
@@ -427,7 +458,6 @@
             db.ref(`battleState/party/${idx}`).set(party[idx]);
         }
 
-        // Alteração de Ki progressivo (0 a 20)
         function adjustPlayerKi(idx, delta) {
             const currentKi = Number(party[idx].ki) || 0;
             const newKi = Math.max(0, Math.min(MAX_KI, currentKi + delta));
@@ -484,7 +514,19 @@
                     card.querySelector('.total-def-display').innerText = stats.totalDef;
                     const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
                     card.querySelector('.hp-text-display').innerText = `${Math.round(p.currentHp)} / ${p.hpMax}`;
-                    card.querySelector('.hp-bar-fill').style.width = `${hpPercent}%`;
+                    
+                    // Barra de Vida Dinâmica por Porcentagem
+                    const hpBarFill = card.querySelector('.hp-bar-fill');
+                    hpBarFill.style.width = `${hpPercent}%`;
+
+                    if (hpPercent <= 25) {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-red-600 to-rose-500 rounded-full shadow-lg shadow-red-600/50';
+                    } else if (hpPercent <= 50) {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full shadow-lg shadow-amber-500/50';
+                    } else {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full shadow-lg shadow-emerald-500/50';
+                    }
+
                     card.querySelector('.player-avatar-img').src = p.img;
 
                     // Atualizar Barra de Ki Gradual (0 a 20)
@@ -614,7 +656,7 @@
             updateEnemyProp('currentHp', enemy.currentHp);
             triggerDamageVisual('enemy-card', finalDamage, p.crit);
 
-            // Verificação de Consumo de Ki Máximo
+            // Consumo de Ki Máximo
             const currentKi = Number(p.ki) || 0;
             if (currentKi >= MAX_KI) {
                 p.ki = 0;
@@ -649,9 +691,112 @@
         }
 
         function changeTurn(delta) {
-            turn = Math.max(1, turn + delta);
+            const oldTurn = turn;
+            turn = Math.max(0, turn + delta);
             db.ref('battleState/turn').set(turn);
-            addLog(`<span class="text-purple-400 font-bold">--- AVANÇOU PARA O TURNO ${turn} ---</span>`);
+            addLog(`<span class="text-purple-400 font-bold">--- TURNO ALTERADO PARA ${turn} ---</span>`);
+
+            // Disparar evento de dados APENAS ao avançar o turno
+            if (delta > 0 && turn > oldTurn) {
+                triggerDiceEvent();
+            }
+        }
+
+        // --- EVENTO DE DADOS NO NOVO TURNO ---
+        function triggerDiceEvent() {
+            activeDice = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6) + 1);
+            selectedDiceIdx = null;
+            assignedPlayers.clear();
+
+            renderDiceModal();
+            document.getElementById('dice-modal').classList.remove('hidden');
+        }
+
+        function renderDiceModal() {
+            const diceContainer = document.getElementById('dice-container');
+            const targetSection = document.getElementById('target-section');
+            const targetContainer = document.getElementById('target-container');
+
+            diceContainer.innerHTML = '';
+            targetContainer.innerHTML = '';
+
+            const alivePlayers = party.filter(p => p.currentHp > 0);
+            const remainingDice = activeDice.filter((d, idx) => d !== null);
+
+            // Fechar modal se todos os dados foram entregues ou não existirem personagens válidos restantes
+            if (remainingDice.length === 0 || assignedPlayers.size >= alivePlayers.length || alivePlayers.length === 0) {
+                document.getElementById('dice-modal').classList.add('hidden');
+                addLog(`🎲 Distribuição de Ki finalizada.`);
+                return;
+            }
+
+            // Renderizar Dados
+            activeDice.forEach((val, idx) => {
+                if (val === null) return; // Dado já utilizado
+
+                const isSelected = selectedDiceIdx === idx;
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2 font-black text-2xl transition-all shadow-lg ${
+                    isSelected 
+                        ? 'bg-amber-500 border-amber-300 text-slate-950 scale-110 shadow-amber-500/50' 
+                        : 'bg-slate-800 border-slate-700 text-amber-400 hover:border-amber-500/50 hover:bg-slate-750'
+                }`;
+                btn.innerHTML = `<i class="fa-solid fa-dice-d6 text-sm mb-0.5"></i> ${val}`;
+                btn.onclick = () => {
+                    selectedDiceIdx = idx;
+                    renderDiceModal();
+                };
+                diceContainer.appendChild(btn);
+            });
+
+            // Mostrar Seção de Alvos se um dado estiver selecionado
+            if (selectedDiceIdx !== null && activeDice[selectedDiceIdx] !== undefined) {
+                targetSection.classList.remove('hidden');
+
+                party.forEach((p, idx) => {
+                    const isDead = p.currentHp <= 0;
+                    const alreadyHasDice = assignedPlayers.has(idx);
+                    const isDisabled = isDead || alreadyHasDice;
+
+                    const btn = document.createElement('button');
+                    btn.disabled = isDisabled;
+                    btn.className = `p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs font-bold transition ${
+                        isDisabled
+                            ? 'bg-slate-950/50 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                            : 'bg-slate-800 border-purple-500/40 text-slate-200 hover:bg-purple-600 hover:border-purple-400 hover:text-white active:scale-95'
+                    }`;
+
+                    let statusText = `${p.name}`;
+                    if (isDead) statusText += ' (Derrotado)';
+                    else if (alreadyHasDice) statusText += ' (Já recebeu)';
+
+                    btn.innerHTML = `
+                        <img src="${p.img}" class="w-8 h-8 rounded-full object-cover">
+                        <span class="truncate w-full text-center">${statusText}</span>
+                    `;
+
+                    btn.onclick = () => assignDiceToPlayer(selectedDiceIdx, idx);
+                    targetContainer.appendChild(btn);
+                });
+            } else {
+                targetSection.classList.add('hidden');
+            }
+        }
+
+        function assignDiceToPlayer(diceIdx, playerIdx) {
+            const diceValue = activeDice[diceIdx];
+            if (!diceValue) return;
+
+            // Atribuir Ki ao personagem
+            adjustPlayerKi(playerIdx, diceValue);
+            assignedPlayers.add(playerIdx);
+            addLog(`🎲 <b>${party[playerIdx].name}</b> recebeu <span class="text-sky-400 font-bold">+${diceValue} Ki</span> do dado!`);
+
+            // Marcar dado como utilizado
+            activeDice[diceIdx] = null;
+            selectedDiceIdx = null;
+
+            renderDiceModal();
         }
 
         function healAll() {
@@ -664,7 +809,7 @@
         function resetStats() {
             party = JSON.parse(JSON.stringify(defaultParty));
             enemy = JSON.parse(JSON.stringify(defaultEnemy));
-            turn = 1;
+            turn = 0;
             saveStateToFirebase();
             renderPartyCards();
             addLog(`<span class="text-slate-400 italic">O estado da batalha foi totalmente resetado no Firebase.</span>`);
@@ -679,6 +824,10 @@
                 const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
                 const kiVal = Number(p.ki) || 0;
                 const kiPercent = Math.max(0, Math.min(100, (kiVal / MAX_KI) * 100));
+
+                let hpColorClass = 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-emerald-500/50';
+                if (hpPercent <= 25) hpColorClass = 'bg-gradient-to-r from-red-600 to-rose-500 shadow-red-600/50';
+                else if (hpPercent <= 50) hpColorClass = 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-amber-500/50';
 
                 const cardHtml = `
                     <div id="player-card-${p.id}" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl relative transition-all duration-300 hover:border-slate-700">
@@ -750,7 +899,7 @@
                                     <span class="hp-text-display font-mono text-slate-300">${Math.round(p.currentHp)} / ${p.hpMax}</span>
                                 </div>
                                 <div class="w-full h-2.5 bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
-                                    <div class="hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width: ${hpPercent}%"></div>
+                                    <div class="hp-bar-fill h-full ${hpColorClass} rounded-full" style="width: ${hpPercent}%"></div>
                                 </div>
 
                                 <div class="flex items-center gap-1 pt-1">

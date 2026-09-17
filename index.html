@@ -385,6 +385,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const stateRef = db.ref('battleState');
+        const battleLogRef = stateRef.child('battleLog');
 
         const MAX_KI = 20;
 
@@ -423,6 +424,10 @@
         let assignedPlayers = new Set();
 
         // --- SINCRONIZAÇÃO COM FIREBASE ---
+        battleLogRef.on('value', (snapshot) => {
+            renderBattleLog(snapshot.val() || {});
+        });
+
         stateRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -441,7 +446,7 @@
         });
 
         function saveStateToFirebase() {
-            stateRef.set({
+            stateRef.update({
                 turn: turn,
                 party: party,
                 enemy: enemy
@@ -1034,19 +1039,43 @@
             el.classList.add('animate-ki-release');
         }
 
-        function addLog(message) {
+        function renderBattleLog(logData) {
             const logBox = document.getElementById('battle-log');
-            const time = new Date().toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const entry = document.createElement('div');
-            entry.className = "py-0.5 border-b border-slate-800/40 last:border-0";
-            entry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${message}`;
-            logBox.appendChild(entry);
+            const entries = Array.isArray(logData)
+                ? logData.filter(Boolean)
+                : Object.values(logData || {});
+
+            logBox.innerHTML = '';
+            if (entries.length === 0) {
+                logBox.innerHTML = '<div class="text-slate-500 italic">Nenhum evento registrado.</div>';
+                return;
+            }
+
+            entries.forEach(({ time, message }) => {
+                const entry = document.createElement('div');
+                entry.className = "py-0.5 border-b border-slate-800/40 last:border-0";
+                entry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${message}`;
+                logBox.appendChild(entry);
+            });
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        function clearLog() {
-            document.getElementById('battle-log').innerHTML = '<div class="text-slate-500 italic">Log limpo.</div>';
+        function addLog(message) {
+            const time = new Date().toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            battleLogRef.push({ time, message });
         }
+
+        function clearLog() {
+            battleLogRef.remove();
+        }
+
+        // Seleciona todo o conteúdo dos campos numéricos ao iniciar a edição,
+        // inclusive os campos criados dinamicamente para os personagens.
+        document.addEventListener('focusin', (event) => {
+            if (event.target.matches('input[type="number"]')) {
+                event.target.select();
+            }
+        });
     </script>
 </body>
 </html>

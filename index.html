@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Ball All-Time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs (Versão Compat/Namespace) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: '#131b2e',
+                        cardBorder: '#1e293b',
+                        accentBlue: '#38bdf8',
+                        accentPurple: '#a855f7',
+                        accentRed: '#ef4444',
+                        accentGold: '#f59e0b',
+                        accentGreen: '#10b981',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            background-color: #080c14;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15), transparent 40%),
+                radial-gradient(circle at 10% 30%, rgba(56, 189, 248, 0.08), transparent 30%),
+                radial-gradient(circle at 90% 70%, rgba(239, 68, 68, 0.08), transparent 30%);
+            min-height: 100vh;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-8px, 5px) rotate(-2deg); }
+            40% { transform: translate(8px, -5px) rotate(2deg); }
+            60% { transform: translate(-5px, 3px) rotate(-1deg); }
+            80% { transform: translate(5px, -3px) rotate(1deg); }
+        }
+
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes flashRed {
+            0% { filter: brightness(1) drop-shadow(0 0 0px rgba(239, 68, 68, 0)); }
+            50% { filter: brightness(2) drop-shadow(0 0 25px rgba(239, 68, 68, 1)); background-color: rgba(239, 68, 68, 0.3); }
+            100% { filter: brightness(1) drop-shadow(0 0 0px rgba(239, 68, 68, 0)); }
+        }
+
+        .animate-hit {
+            animation: flashRed 0.4s ease-out;
+        }
+
+        @keyframes flashGreen {
+            0% { filter: brightness(1) drop-shadow(0 0 0px rgba(16, 185, 129, 0)); }
+            50% { filter: brightness(1.5) drop-shadow(0 0 25px rgba(16, 185, 129, 0.8)); background-color: rgba(16, 185, 129, 0.25); }
+            100% { filter: brightness(1) drop-shadow(0 0 0px rgba(16, 185, 129, 0)); }
+        }
+
+        .animate-heal {
+            animation: flashGreen 0.5s ease-out;
+        }
+
+        @keyframes kiRelease {
+            0% { filter: brightness(1) drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
+            50% { filter: brightness(2.5) drop-shadow(0 0 35px rgba(245, 158, 11, 1)); transform: scale(1.02); }
+            100% { filter: brightness(1) drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
+        }
+
+        .animate-ki-release {
+            animation: kiRelease 0.6s ease-out;
+        }
+
+        @keyframes floatUpFade {
+            0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+            20% { opacity: 1; transform: translate(-50%, -20px) scale(1.3); }
+            80% { opacity: 1; transform: translate(-50%, -50px) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -70px) scale(0.8); }
+        }
+
+        .floating-damage {
+            position: absolute;
+            left: 50%;
+            top: 30%;
+            transform: translate(-50%, 0);
+            pointer-events: none;
+            animation: floatUpFade 1.2s ease-out forwards;
+            z-index: 50;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,1);
+        }
+
+        .floating-heal {
+            position: absolute;
+            left: 50%;
+            top: 30%;
+            transform: translate(-50%, 0);
+            pointer-events: none;
+            animation: floatUpFade 1.2s ease-out forwards;
+            z-index: 50;
+            font-weight: 900;
+            color: #34d399;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.9), 0 2px 4px rgba(0,0,0,1);
+        }
+
+        .hp-bar-fill, .ki-bar-fill {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1322;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-6 text-slate-200">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <header class="flex flex-col md:flex-row items-center justify-between bg-slate-900/80 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-slate-800 shadow-2xl gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-gradient-to-tr from-purple-600 to-blue-500 rounded-xl shadow-lg shadow-purple-500/20">
+                    <i class="fa-solid font-black fa-swords text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-red-400 bg-clip-text text-transparent">
+                        Dragon Ball All-Time
+                    </h1>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-slate-400">Calculadora e Painel de Batalha</p>
+                        <span id="sync-status" class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                            🟢 Conectado ao Firebase
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contador de Turno -->
+            <div class="flex items-center gap-4 bg-slate-950/80 px-5 py-2.5 rounded-xl border border-slate-800">
+                <button onclick="changeTurn(-1)" class="w-9 h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition active:scale-95">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="text-center min-w-[90px]">
+                    <span class="text-xs uppercase tracking-widest text-slate-500 font-bold block">Turno</span>
+                    <span id="turn-display" class="text-2xl font-black text-purple-400">0</span>
+                </div>
+                <button onclick="changeTurn(1)" class="w-9 h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition active:scale-95">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Ações Globais -->
+            <div class="flex items-center gap-2">
+                <button onclick="healAll()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold text-sm transition active:scale-95">
+                    <i class="fa-solid fa-heart-pulse"></i> Restaurar Todos HPs
+                </button>
+                <button onclick="resetStats()" class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold text-sm transition active:scale-95" title="Resetar Valores">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="relative">
+            <div id="enemy-card" class="bg-gradient-to-b from-slate-900 to-red-950/40 p-5 sm:p-6 rounded-2xl border border-red-900/40 shadow-2xl relative overflow-hidden transition-all duration-300">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex flex-col lg:flex-row gap-6 items-stretch">
+                    <!-- Avatar, Troca de Imagem & HP Barra do Inimigo -->
+                    <div class="flex flex-col sm:flex-row lg:flex-col items-center gap-4 w-full lg:w-72 shrink-0">
+                        <div class="relative w-full max-w-[200px] aspect-[3/4] rounded-xl overflow-hidden border-2 border-red-600/50 shadow-xl group">
+                            <img id="enemy-img" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10" alt="Inimigo" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+
+                            <div class="absolute bottom-2 left-2 right-2 flex gap-1">
+                                <label class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] py-1 text-center font-bold cursor-pointer transition flex items-center justify-center gap-1 shadow">
+                                    <i class="fa-solid fa-upload"></i> Upload
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleEnemyFileUpload(event)">
+                                </label>
+                                <button onclick="promptEnemyImageURL()" class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] py-1 font-bold transition flex items-center justify-center gap-1 shadow">
+                                    <i class="fa-solid fa-link"></i> URL
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- HP Inimigo Display & Cura Individual -->
+                        <div class="w-full space-y-2">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-slate-300 flex items-center gap-1.5"><i class="fa-solid fa-heart text-red-500"></i> HP Inimigo</span>
+                                <span class="font-mono font-bold text-slate-200" id="enemy-hp-text">1000 / 1000</span>
+                            </div>
+                            <div class="w-full h-4 bg-slate-950 rounded-full p-0.5 border border-red-900/50 overflow-hidden shadow-inner relative">
+                                <div id="enemy-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-amber-500 rounded-full hp-bar-fill shadow-lg shadow-red-600/50" style="width: 100%;"></div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 pt-1">
+                                <input type="number" id="enemy-heal-pct" value="20" min="1" max="100" class="w-16 bg-slate-950 border border-emerald-900/60 rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold text-center focus:outline-none focus:border-emerald-500" placeholder="%">
+                                <button onclick="healEnemy()" class="flex-1 py-1 px-3 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/40 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow">
+                                    <i class="fa-solid fa-kit-medical"></i> Curar % HP
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Atributos do Inimigo -->
+                    <div class="flex-1 flex flex-col justify-between gap-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <i class="fa-solid fa-skull text-red-500 text-lg"></i>
+                                <input type="text" id="enemy-name" value="Nome" oninput="updateEnemyProp('name', this.value)" class="bg-slate-950/60 border border-slate-700/60 text-lg font-bold text-red-400 px-3 py-1 rounded-lg focus:outline-none focus:border-red-500 w-full sm:w-64">
+                            </div>
+
+                            <div class="flex items-center gap-4 bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800/80 w-full sm:w-auto justify-around">
+                                <div class="text-center">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 block">ATK Total</span>
+                                    <span id="enemy-total-atk" class="text-lg font-extrabold text-amber-400 font-mono">0</span>
+                                </div>
+                                <div class="h-6 w-px bg-slate-800"></div>
+                                <div class="text-center">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 block">DEF Total</span>
+                                    <span id="enemy-total-def" class="text-lg font-extrabold text-blue-400 font-mono">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">HP Max</label>
+                                <input type="number" id="enemy-max-hp" value="40000" oninput="updateEnemyProp('maxHp', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">ATK Base</label>
+                                <input type="number" id="enemy-atk" value="4000" oninput="updateEnemyProp('atk', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">Bônus ATK (%)</label>
+                                <input type="number" id="enemy-bonus-atk" value="0" oninput="updateEnemyProp('atkBonus', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">Domínio ATK (%)</label>
+                                <input type="number" id="enemy-dom-atk" value="0" oninput="updateEnemyProp('atkDom', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">DEF Base</label>
+                                <input type="number" id="enemy-def" value="3000" oninput="updateEnemyProp('def', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">Bônus DEF (%)</label>
+                                <input type="number" id="enemy-bonus-def" value="0" oninput="updateEnemyProp('defBonus', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">Domínio DEF (%)</label>
+                                <input type="number" id="enemy-dom-def" value="0" oninput="updateEnemyProp('defDom', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+
+                            <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
+                                <label class="text-slate-400 font-semibold block">Redução Dano (%)</label>
+                                <input type="number" id="enemy-dmg-red" value="0" oninput="updateEnemyProp('dmgRed', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-950/70 p-3 rounded-xl border border-red-900/30">
+                            <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-bold text-slate-400">Dano Habilidade (%):</label>
+                                    <input type="number" id="enemy-skill-dmg" value="100" oninput="updateEnemyProp('skillDmg', this.value)" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-amber-400 focus:border-red-500 outline-none">
+                                </div>
+                                <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-400 select-none bg-amber-500/10 px-2.5 py-1.5 rounded-lg border border-amber-500/30">
+                                    <input type="checkbox" id="enemy-crit" onchange="updateEnemyProp('crit', this.checked)" class="accent-amber-500 w-4 h-4 rounded">
+                                    <span>Crítico (1.5x)</span>
+                                </label>
+                            </div>
+
+                            <button onclick="enemyAttackArea()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition active:scale-95">
+                                <i class="fa-solid fa-burst"></i> Ataque em Área (Todos os Personagens)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-users-shield text-blue-400"></i> Time do Jogador (5 Personagens)
+                </h2>
+                <span class="text-xs text-slate-400">Sincronização em tempo real ativada</span>
+            </div>
+
+            <div id="party-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <!-- JS irá preencher os 5 personagens aqui -->
+            </div>
+        </section>
+
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-scroll text-purple-400"></i> Histórico de Batalha (Battle Log)
+                </h3>
+                <button onclick="clearLog()" class="text-xs text-slate-400 hover:text-slate-200 transition">
+                    <i class="fa-solid fa-trash-can"></i> Limpar Log
+                </button>
+            </div>
+            <div id="battle-log" class="h-40 overflow-y-auto font-mono text-xs space-y-1.5 pr-2">
+                <div class="text-slate-500 italic">Conectando ao Firebase...</div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL DE ROLAGEM DE DADOS DO TURNO -->
+    <div id="dice-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-6">
+            <div class="text-center space-y-1">
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-purple-400 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-dice text-amber-400"></i> Dados de Ki do Novo Turno
+                </h2>
+                <p class="text-xs text-slate-400">Selecione um dado e escolha qual personagem irá recebê-lo como Ki adicional.</p>
+            </div>
+
+            <!-- Dados Rolados -->
+            <div id="dice-container" class="flex flex-wrap justify-center gap-3">
+                <!-- JS preenche os dados -->
+            </div>
+
+            <!-- Seleção de Alvo -->
+            <div id="target-section" class="space-y-3 hidden border-t border-slate-800 pt-4">
+                <p class="text-xs font-bold text-slate-300 text-center uppercase tracking-wider">
+                    Entregar o Dado de Ki ao Personagem:
+                </p>
+                <div id="target-container" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <!-- JS preenche os alvos disponíveis -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyALj_2CsTJuYXQM6xSFGkhB0t1VZ1r7aEI",
+            authDomain: "dragon-ball-all-time.firebaseapp.com",
+            databaseURL: "https://dragon-ball-all-time-default-rtdb.firebaseio.com",
+            projectId: "dragon-ball-all-time",
+            storageBucket: "dragon-ball-all-time.firebasestorage.app",
+            messagingSenderId: "603071633671",
+            appId: "1:603071633671:web:91aa1f4f921ff8febbcda2"
+        };
+
+        // Inicialização do Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const stateRef = db.ref('battleState');
+
+        const MAX_KI = 20;
+
+        const defaultParty = [
+            { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 2, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 3, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 4, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 }
+        ];
+
+        const defaultEnemy = {
+            name: "Nome",
+            currentHp: 40000,
+            maxHp: 40000,
+            atk: 4000,
+            atkBonus: 0,
+            atkDom: 0,
+            def: 3000,
+            defBonus: 0,
+            defDom: 0,
+            dmgRed: 0,
+            skillDmg: 100,
+            crit: false,
+            img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10"
+        };
+
+        let turn = 0;
+        let party = JSON.parse(JSON.stringify(defaultParty));
+        let enemy = JSON.parse(JSON.stringify(defaultEnemy));
+        let isFirstLoad = true;
+
+        // Estado do evento de dados
+        let activeDice = [];
+        let selectedDiceIdx = null;
+        let assignedPlayers = new Set();
+
+        // --- SINCRONIZAÇÃO COM FIREBASE ---
+        stateRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                turn = data.turn ?? 0;
+                party = data.party ?? party;
+                enemy = data.enemy ?? enemy;
+                
+                if (isFirstLoad) {
+                    renderPartyCards();
+                    isFirstLoad = false;
+                }
+                updateUIFromState();
+            } else {
+                saveStateToFirebase();
+            }
+        });
+
+        function saveStateToFirebase() {
+            stateRef.set({
+                turn: turn,
+                party: party,
+                enemy: enemy
+            });
+        }
+
+        function syncPlayerProp(idx, prop, val) {
+            if (prop === 'name') party[idx].name = val;
+            else if (prop === 'crit' || prop === 'evade') party[idx][prop] = val;
+            else {
+                party[idx][prop] = parseFloat(val) || 0;
+                if (prop === 'hpMax') party[idx].currentHp = Math.min(party[idx].currentHp, party[idx].hpMax);
+            }
+            db.ref(`battleState/party/${idx}`).set(party[idx]);
+        }
+
+        function adjustPlayerKi(idx, delta) {
+            const currentKi = Number(party[idx].ki) || 0;
+            const newKi = Math.max(0, Math.min(MAX_KI, currentKi + delta));
+            party[idx].ki = newKi;
+            db.ref(`battleState/party/${idx}/ki`).set(newKi);
+        }
+
+        function setPlayerKiDirect(idx, val) {
+            const newKi = Math.max(0, Math.min(MAX_KI, Number(val) || 0));
+            party[idx].ki = newKi;
+            db.ref(`battleState/party/${idx}/ki`).set(newKi);
+        }
+
+        function updateEnemyProp(prop, val) {
+            if (prop === 'name' || prop === 'img') enemy[prop] = val;
+            else if (prop === 'crit') enemy[prop] = val;
+            else {
+                enemy[prop] = parseFloat(val) || 0;
+                if (prop === 'maxHp') enemy.currentHp = Math.min(enemy.currentHp, enemy.maxHp);
+            }
+            db.ref('battleState/enemy').set(enemy);
+        }
+
+        function updateUIFromState() {
+            document.getElementById('turn-display').innerText = turn;
+
+            // Inimigo
+            document.getElementById('enemy-name').value = enemy.name || 'Nome';
+            document.getElementById('enemy-img').src = enemy.img;
+            document.getElementById('enemy-max-hp').value = enemy.maxHp;
+            document.getElementById('enemy-atk').value = enemy.atk;
+            document.getElementById('enemy-bonus-atk').value = enemy.atkBonus;
+            document.getElementById('enemy-dom-atk').value = enemy.atkDom;
+            document.getElementById('enemy-def').value = enemy.def;
+            document.getElementById('enemy-bonus-def').value = enemy.defBonus;
+            document.getElementById('enemy-dom-def').value = enemy.defDom;
+            document.getElementById('enemy-dmg-red').value = enemy.dmgRed;
+            document.getElementById('enemy-skill-dmg').value = enemy.skillDmg;
+            document.getElementById('enemy-crit').checked = enemy.crit;
+
+            const enemyStats = calcEnemyStats();
+            document.getElementById('enemy-total-atk').innerText = enemyStats.totalAtk;
+            document.getElementById('enemy-total-def').innerText = enemyStats.totalDef;
+            const enemyHpPercent = Math.max(0, Math.min(100, (enemy.currentHp / enemy.maxHp) * 100));
+            document.getElementById('enemy-hp-bar').style.width = enemyHpPercent + '%';
+            document.getElementById('enemy-hp-text').innerText = `${Math.round(enemy.currentHp)} / ${enemy.maxHp}`;
+
+            // Jogadores
+            party.forEach((p, idx) => {
+                const card = document.getElementById(`player-card-${p.id}`);
+                if (card) {
+                    const stats = calcPlayerStats(p);
+                    card.querySelector('.total-atk-display').innerText = stats.totalAtk;
+                    card.querySelector('.total-def-display').innerText = stats.totalDef;
+                    const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
+                    card.querySelector('.hp-text-display').innerText = `${Math.round(p.currentHp)} / ${p.hpMax}`;
+                    
+                    // Barra de Vida Dinâmica por Porcentagem
+                    const hpBarFill = card.querySelector('.hp-bar-fill');
+                    hpBarFill.style.width = `${hpPercent}%`;
+
+                    if (hpPercent <= 25) {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-red-600 to-rose-500 rounded-full shadow-lg shadow-red-600/50';
+                    } else if (hpPercent <= 50) {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full shadow-lg shadow-amber-500/50';
+                    } else {
+                        hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full shadow-lg shadow-emerald-500/50';
+                    }
+
+                    card.querySelector('.player-avatar-img').src = p.img;
+
+                    // Atualizar Barra de Ki Gradual (0 a 20)
+                    const kiVal = Number(p.ki) || 0;
+                    const kiInput = card.querySelector('.ki-input-field');
+                    if (kiInput && document.activeElement !== kiInput) {
+                        kiInput.value = kiVal;
+                    }
+
+                    const kiBarFill = card.querySelector('.ki-bar-fill');
+                    const kiPercent = Math.max(0, Math.min(100, (kiVal / MAX_KI) * 100));
+                    kiBarFill.style.width = `${kiPercent}%`;
+
+                    if (kiVal >= MAX_KI) {
+                        kiBarFill.className = 'ki-bar-fill h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg shadow-amber-400/80';
+                    } else {
+                        kiBarFill.className = 'ki-bar-fill h-full bg-gradient-to-r from-sky-500 to-blue-400 rounded-full shadow-lg shadow-sky-500/50';
+                    }
+                }
+            });
+        }
+
+        function calcPlayerStats(p) {
+            const atkBaseWithBonus = p.atk + (p.atk * (p.atkBonus / 100));
+            const atkCat = 1 + (p.atkCat / 100);
+            const atkDom = 1 + (p.atkDom / 100);
+            let totalAtk = (atkBaseWithBonus * atkCat) * atkDom;
+            if (p.crit) totalAtk *= 1.5;
+
+            const defBaseWithBonus = p.def + (p.def * (p.defBonus / 100));
+            const defCat = 1 + (p.defCat / 100);
+            const defDom = 1 + (p.defDom / 100);
+            const totalDef = (defBaseWithBonus * defCat) * defDom;
+
+            return { totalAtk: Math.round(totalAtk), totalDef: Math.round(totalDef) };
+        }
+
+        function calcEnemyStats() {
+            let totalAtk = (enemy.atk + (enemy.atk * (enemy.atkBonus / 100))) * (1 + (enemy.atkDom / 100));
+            if (enemy.crit) totalAtk *= 1.5;
+            let totalDef = (enemy.def + (enemy.def * (enemy.defBonus / 100))) * (1 + (enemy.defDom / 100));
+            return { totalAtk: Math.round(totalAtk), totalDef: Math.round(totalDef) };
+        }
+
+        // --- TROCA DE IMAGENS ---
+        function handleEnemyFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    updateEnemyProp('img', e.target.result);
+                    addLog(`🖼️ Imagem do Inimigo alterada.`);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function promptEnemyImageURL() {
+            const url = prompt("Cole a URL da imagem para o Inimigo:", enemy.img);
+            if (url && url.trim() !== "") {
+                updateEnemyProp('img', url.trim());
+                addLog(`🖼️ Imagem do Inimigo alterada.`);
+            }
+        }
+
+        function handlePlayerFileUpload(idx, event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    syncPlayerProp(idx, 'img', e.target.result);
+                    addLog(`🖼️ Imagem de <b>${party[idx].name}</b> alterada.`);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function promptPlayerImageURL(idx) {
+            const url = prompt(`Cole a URL da imagem para ${party[idx].name}:`, party[idx].img);
+            if (url && url.trim() !== "") {
+                syncPlayerProp(idx, 'img', url.trim());
+                addLog(`🖼️ Imagem de <b>${party[idx].name}</b> alterada.`);
+            }
+        }
+
+        // --- AÇÕES DE JOGO ---
+        function healEnemy() {
+            const pct = parseFloat(document.getElementById('enemy-heal-pct').value) || 0;
+            if (pct <= 0) return;
+
+            const healAmount = Math.round(enemy.maxHp * (pct / 100));
+            const oldHp = enemy.currentHp;
+            enemy.currentHp = Math.min(enemy.maxHp, enemy.currentHp + healAmount);
+            const actualHeal = Math.round(enemy.currentHp - oldHp);
+
+            updateEnemyProp('currentHp', enemy.currentHp);
+            triggerHealVisual('enemy-card', actualHeal);
+            addLog(`💚 <b>${enemy.name}</b> recuperou <span class="text-emerald-400 font-bold">+${actualHeal} HP</span>.`);
+        }
+
+        function healPlayer(idx) {
+            const p = party[idx];
+            const pct = parseFloat(p.healPct) || 0;
+            if (pct <= 0) return;
+
+            const healAmount = Math.round(p.hpMax * (pct / 100));
+            const oldHp = p.currentHp;
+            p.currentHp = Math.min(p.hpMax, p.currentHp + healAmount);
+            const actualHeal = Math.round(p.currentHp - oldHp);
+
+            syncPlayerProp(idx, 'currentHp', p.currentHp);
+            triggerHealVisual(`player-card-${p.id}`, actualHeal);
+            addLog(`💚 <b>${p.name}</b> recuperou <span class="text-emerald-400 font-bold">+${actualHeal} HP</span>.`);
+        }
+
+        function playerAttack(playerIdx) {
+            const p = party[playerIdx];
+            const pStats = calcPlayerStats(p);
+            const enemyStats = calcEnemyStats();
+
+            const rawDmg = (pStats.totalAtk * (p.skillDmg / 100)) - enemyStats.totalDef;
+            const reducedDmg = rawDmg * (1 - (enemy.dmgRed / 100));
+            const finalDamage = Math.max(1, Math.round(reducedDmg));
+
+            enemy.currentHp = Math.max(0, enemy.currentHp - finalDamage);
+
+            updateEnemyProp('currentHp', enemy.currentHp);
+            triggerDamageVisual('enemy-card', finalDamage, p.crit);
+
+            // Consumo de Ki Máximo
+            const currentKi = Number(p.ki) || 0;
+            if (currentKi >= MAX_KI) {
+                p.ki = 0;
+                db.ref(`battleState/party/${playerIdx}/ki`).set(0);
+                triggerKiReleaseVisual(`player-card-${p.id}`);
+                addLog(`🔥 <b>${p.name}</b> LIBEROU TODO O KI (20/20) NO ATAQUE! Ki resetado para 0.`);
+            }
+
+            addLog(`⚔️ <b>${p.name}</b> atacou <b>${enemy.name}</b> causando <span class="text-red-400 font-bold">${finalDamage}</span> de dano! ${p.crit ? '<span class="text-amber-400 font-bold">(CRÍTICO!)</span>' : ''}`);
+        }
+
+        function enemyAttackArea() {
+            const enemyStats = calcEnemyStats();
+            addLog(`<span class="text-red-400 font-bold">💥 ${enemy.name} executou um Ataque em Área!</span>`);
+
+            party.forEach((p, idx) => {
+                if (p.evade) {
+                    triggerDamageVisual(`player-card-${p.id}`, 0, false, true);
+                    addLog(`↳ <b>${p.name}</b> <span class="text-blue-400 font-bold">ESQUIVOU</span>!`);
+                } else {
+                    const pStats = calcPlayerStats(p);
+                    const rawDmg = (enemyStats.totalAtk * (enemy.skillDmg / 100)) - pStats.totalDef;
+                    const reducedDmg = rawDmg * (1 - (p.dmgRed / 100));
+                    const finalDamage = Math.max(1, Math.round(reducedDmg));
+
+                    p.currentHp = Math.max(0, p.currentHp - finalDamage);
+                    syncPlayerProp(idx, 'currentHp', p.currentHp);
+                    triggerDamageVisual(`player-card-${p.id}`, finalDamage, enemy.crit);
+                    addLog(`↳ <b>${p.name}</b> recebeu <span class="text-red-400 font-bold">${finalDamage}</span> de dano.`);
+                }
+            });
+        }
+
+        function changeTurn(delta) {
+            const oldTurn = turn;
+            turn = Math.max(0, turn + delta);
+            db.ref('battleState/turn').set(turn);
+            addLog(`<span class="text-purple-400 font-bold">--- TURNO ALTERADO PARA ${turn} ---</span>`);
+
+            // Disparar evento de dados APENAS ao avançar o turno
+            if (delta > 0 && turn > oldTurn) {
+                triggerDiceEvent();
+            }
+        }
+
+        // --- EVENTO DE DADOS NO NOVO TURNO ---
+        function triggerDiceEvent() {
+            activeDice = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6) + 1);
+            selectedDiceIdx = null;
+            assignedPlayers.clear();
+
+            renderDiceModal();
+            document.getElementById('dice-modal').classList.remove('hidden');
+        }
+
+        function renderDiceModal() {
+            const diceContainer = document.getElementById('dice-container');
+            const targetSection = document.getElementById('target-section');
+            const targetContainer = document.getElementById('target-container');
+
+            diceContainer.innerHTML = '';
+            targetContainer.innerHTML = '';
+
+            const alivePlayers = party.filter(p => p.currentHp > 0);
+            const remainingDice = activeDice.filter((d, idx) => d !== null);
+
+            // Fechar modal se todos os dados foram entregues ou não existirem personagens válidos restantes
+            if (remainingDice.length === 0 || assignedPlayers.size >= alivePlayers.length || alivePlayers.length === 0) {
+                document.getElementById('dice-modal').classList.add('hidden');
+                addLog(`🎲 Distribuição de Ki finalizada.`);
+                return;
+            }
+
+            // Renderizar Dados
+            activeDice.forEach((val, idx) => {
+                if (val === null) return; // Dado já utilizado
+
+                const isSelected = selectedDiceIdx === idx;
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2 font-black text-2xl transition-all shadow-lg ${
+                    isSelected 
+                        ? 'bg-amber-500 border-amber-300 text-slate-950 scale-110 shadow-amber-500/50' 
+                        : 'bg-slate-800 border-slate-700 text-amber-400 hover:border-amber-500/50 hover:bg-slate-750'
+                }`;
+                btn.innerHTML = `<i class="fa-solid fa-dice-d6 text-sm mb-0.5"></i> ${val}`;
+                btn.onclick = () => {
+                    selectedDiceIdx = idx;
+                    renderDiceModal();
+                };
+                diceContainer.appendChild(btn);
+            });
+
+            // Mostrar Seção de Alvos se um dado estiver selecionado
+            if (selectedDiceIdx !== null && activeDice[selectedDiceIdx] !== undefined) {
+                targetSection.classList.remove('hidden');
+
+                party.forEach((p, idx) => {
+                    const isDead = p.currentHp <= 0;
+                    const alreadyHasDice = assignedPlayers.has(idx);
+                    const isDisabled = isDead || alreadyHasDice;
+                    const currentKi = Number(p.ki) || 0;
+
+                    const kiColorClass = currentKi >= MAX_KI ? 'text-amber-400' : 'text-sky-400';
+
+                    const btn = document.createElement('button');
+                    btn.disabled = isDisabled;
+                    btn.className = `p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs font-bold transition ${
+                        isDisabled
+                            ? 'bg-slate-950/50 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                            : 'bg-slate-800 border-purple-500/40 text-slate-200 hover:bg-purple-600 hover:border-purple-400 hover:text-white active:scale-95'
+                    }`;
+
+                    let statusText = `${p.name}`;
+                    if (isDead) statusText += ' (Derrotado)';
+                    else if (alreadyHasDice) statusText += ' (Já recebeu)';
+
+                    btn.innerHTML = `
+                        <img src="${p.img}" class="w-8 h-8 rounded-full object-cover">
+                        <span class="truncate w-full text-center">${statusText}</span>
+                        <span class="text-[10px] font-mono font-bold ${kiColorClass}">Ki: ${currentKi}/${MAX_KI}</span>
+                    `;
+
+                    btn.onclick = () => assignDiceToPlayer(selectedDiceIdx, idx);
+                    targetContainer.appendChild(btn);
+                });
+            } else {
+                targetSection.classList.add('hidden');
+            }
+        }
+
+        function assignDiceToPlayer(diceIdx, playerIdx) {
+            const diceValue = activeDice[diceIdx];
+            if (!diceValue) return;
+
+            // Atribuir Ki ao personagem
+            adjustPlayerKi(playerIdx, diceValue);
+            assignedPlayers.add(playerIdx);
+            addLog(`🎲 <b>${party[playerIdx].name}</b> recebeu <span class="text-sky-400 font-bold">+${diceValue} Ki</span> do dado!`);
+
+            // Marcar dado como utilizado
+            activeDice[diceIdx] = null;
+            selectedDiceIdx = null;
+
+            renderDiceModal();
+        }
+
+        function healAll() {
+            enemy.currentHp = enemy.maxHp;
+            party.forEach(p => p.currentHp = p.hpMax);
+            saveStateToFirebase();
+            addLog(`<span class="text-emerald-400 font-bold">✨ Todos os HPs foram totalmente restaurados!</span>`);
+        }
+
+        function resetStats() {
+            party = JSON.parse(JSON.stringify(defaultParty));
+            enemy = JSON.parse(JSON.stringify(defaultEnemy));
+            turn = 0;
+            saveStateToFirebase();
+            renderPartyCards();
+            addLog(`<span class="text-slate-400 italic">O estado da batalha foi totalmente resetado no Firebase.</span>`);
+        }
+
+        function renderPartyCards() {
+            const container = document.getElementById('party-container');
+            container.innerHTML = '';
+
+            party.forEach((p, idx) => {
+                const stats = calcPlayerStats(p);
+                const hpPercent = Math.max(0, Math.min(100, (p.currentHp / p.hpMax) * 100));
+                const kiVal = Number(p.ki) || 0;
+                const kiPercent = Math.max(0, Math.min(100, (kiVal / MAX_KI) * 100));
+
+                let hpColorClass = 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-emerald-500/50';
+                if (hpPercent <= 25) hpColorClass = 'bg-gradient-to-r from-red-600 to-rose-500 shadow-red-600/50';
+                else if (hpPercent <= 50) hpColorClass = 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-amber-500/50';
+
+                const isLeader = idx === 0;
+
+                const cardHtml = `
+                    <div id="player-card-${p.id}" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl relative transition-all duration-300 hover:border-slate-700">
+                        <div class="space-y-3">
+                            <div class="pb-2 border-b border-slate-800/80 space-y-2">
+                                <button onclick="playerAttack(${idx})" class="w-full py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center gap-1.5 transition active:scale-95">
+                                    <i class="fa-solid fa-sword"></i> Atacar Inimigo
+                                </button>
+
+                                <div class="flex items-center justify-between text-[11px] gap-1">
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-slate-400 font-semibold">Dano (%):</span>
+                                        <input type="number" value="${p.skillDmg}" oninput="syncPlayerProp(${idx}, 'skillDmg', this.value)" class="w-10 bg-slate-950 border border-slate-700 rounded text-center text-amber-400 font-bold font-mono">
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label class="flex items-center gap-1 cursor-pointer text-blue-400 select-none font-bold">
+                                            <input type="checkbox" ${p.evade ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'evade', this.checked)" class="accent-blue-500 rounded">
+                                            <span>Esquiva</span>
+                                        </label>
+                                        <label class="flex items-center gap-1 cursor-pointer text-amber-400 select-none font-bold">
+                                            <input type="checkbox" ${p.crit ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'crit', this.checked)" class="accent-amber-500 rounded">
+                                            <span>Crítico</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden border border-slate-700/80 shadow-md group">
+                                <img src="${p.img}" alt="${p.name}" class="player-avatar-img w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+                                
+                                <div class="absolute top-2 left-2 right-2 flex flex-col gap-1">
+                                    <input type="text" value="${p.name}" oninput="syncPlayerProp(${idx}, 'name', this.value)" class="w-full bg-slate-950/80 border border-slate-700/80 text-xs font-bold text-slate-100 px-2 py-0.5 rounded focus:outline-none focus:border-blue-500 shadow">
+                                    
+                                    ${isLeader ? `
+                                        <div class="self-start bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-md shadow-lg border border-amber-300 flex items-center gap-1">
+                                            <i class="fa-solid fa-crown text-slate-950"></i> LÍDER
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                <div class="absolute bottom-2 left-2 right-2 flex gap-1">
+                                    <label class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[9px] py-1 text-center font-bold cursor-pointer transition flex items-center justify-center gap-0.5 shadow">
+                                        <i class="fa-solid fa-upload"></i> Upload
+                                        <input type="file" accept="image/*" class="hidden" onchange="handlePlayerFileUpload(${idx}, event)">
+                                    </label>
+                                    <button onclick="promptPlayerImageURL(${idx})" class="flex-1 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded text-[9px] py-1 font-bold transition flex items-center justify-center gap-0.5 shadow">
+                                        <i class="fa-solid fa-link"></i> URL
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CONTADOR E BARRA PROGRESSIVA DE KI (0 a 20) -->
+                            <div class="bg-slate-950/70 border border-sky-500/20 p-2 rounded-xl space-y-1.5 shadow-inner">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-sky-400 flex items-center gap-1 uppercase tracking-wider">
+                                        <i class="fa-solid fa-bolt text-sky-400"></i> Ki
+                                    </span>
+                                    <div class="flex items-center gap-1">
+                                        <button onclick="adjustPlayerKi(${idx}, -1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">-</button>
+                                        <input type="number" min="0" max="20" value="${kiVal}" onchange="setPlayerKiDirect(${idx}, this.value)" class="ki-input-field w-8 bg-slate-900 border border-slate-700 rounded text-center text-xs font-mono font-bold text-sky-400 p-0 focus:outline-none focus:border-sky-500">
+                                        <span class="text-[10px] font-mono text-slate-500 font-bold">/20</span>
+                                        <button onclick="adjustPlayerKi(${idx}, 1)" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[10px] flex items-center justify-center transition active:scale-95">+</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="w-full h-2.5 bg-slate-950 rounded-full border border-slate-800 overflow-hidden p-0.5 relative">
+                                    <div class="ki-bar-fill h-full ${kiVal >= MAX_KI ? 'bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg shadow-amber-400/80' : 'bg-gradient-to-r from-sky-500 to-blue-400 rounded-full shadow-lg shadow-sky-500/50'}" style="width: ${kiPercent}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[11px] font-bold">
+                                    <span class="text-slate-400"><i class="fa-solid fa-heart text-red-400"></i> HP</span>
+                                    <span class="hp-text-display font-mono text-slate-300">${Math.round(p.currentHp)} / ${p.hpMax}</span>
+                                </div>
+                                <div class="w-full h-2.5 bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
+                                    <div class="hp-bar-fill h-full ${hpColorClass} rounded-full" style="width: ${hpPercent}%"></div>
+                                </div>
+
+                                <div class="flex items-center gap-1 pt-1">
+                                    <input type="number" value="${p.healPct || 20}" oninput="syncPlayerProp(${idx}, 'healPct', this.value)" class="w-12 bg-slate-950 border border-emerald-900/60 rounded px-1 py-0.5 text-[10px] text-emerald-400 font-mono font-bold text-center focus:outline-none focus:border-emerald-500" placeholder="%">
+                                    <button onclick="healPlayer(${idx})" class="flex-1 py-1 px-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/40 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 active:scale-95 shadow">
+                                        <i class="fa-solid fa-kit-medical"></i> Curar % HP
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                                <div class="text-center">
+                                    <span class="text-[9px] uppercase font-bold text-slate-500 block">ATK Total</span>
+                                    <span class="total-atk-display text-sm font-extrabold text-amber-400 font-mono">${stats.totalAtk}</span>
+                                </div>
+                                <div class="text-center">
+                                    <span class="text-[9px] uppercase font-bold text-slate-500 block">DEF Total</span>
+                                    <span class="total-def-display text-sm font-extrabold text-blue-400 font-mono">${stats.totalDef}</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">HP Max</label>
+                                    <input type="number" value="${p.hpMax}" oninput="syncPlayerProp(${idx}, 'hpMax', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Red. Dano %</label>
+                                    <input type="number" value="${p.dmgRed}" oninput="syncPlayerProp(${idx}, 'dmgRed', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">ATK Base</label>
+                                    <input type="number" value="${p.atk}" oninput="syncPlayerProp(${idx}, 'atk', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Bônus ATK %</label>
+                                    <input type="number" value="${p.atkBonus}" oninput="syncPlayerProp(${idx}, 'atkBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Cat. ATK %</label>
+                                    <input type="number" value="${p.atkCat}" oninput="syncPlayerProp(${idx}, 'atkCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Dom. ATK %</label>
+                                    <input type="number" value="${p.atkDom}" oninput="syncPlayerProp(${idx}, 'atkDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">DEF Base</label>
+                                    <input type="number" value="${p.def}" oninput="syncPlayerProp(${idx}, 'def', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Bônus DEF %</label>
+                                    <input type="number" value="${p.defBonus}" oninput="syncPlayerProp(${idx}, 'defBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Cat. DEF %</label>
+                                    <input type="number" value="${p.defCat}" oninput="syncPlayerProp(${idx}, 'defCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                                <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                                    <label class="text-slate-400 block font-semibold">Dom. DEF %</label>
+                                    <input type="number" value="${p.defDom}" oninput="syncPlayerProp(${idx}, 'defDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // --- VISUAIS ---
+        function triggerDamageVisual(elementId, damageValue, isCritical = false, isEvaded = false) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            el.classList.remove('animate-shake', 'animate-hit');
+            void el.offsetWidth;
+
+            if (!isEvaded) el.classList.add('animate-shake', 'animate-hit');
+
+            const floatNum = document.createElement('div');
+            if (isEvaded) {
+                floatNum.className = `floating-damage text-blue-400 text-2xl`;
+                floatNum.innerHTML = `ESQUIVOU!`;
+            } else {
+                floatNum.className = `floating-damage ${isCritical ? 'text-amber-400 text-3xl' : 'text-red-500 text-2xl'}`;
+                floatNum.innerHTML = `${isCritical ? '⚡ CRÍTICO! ' : ''}-${damageValue}`;
+            }
+
+            el.appendChild(floatNum);
+            setTimeout(() => { floatNum.remove(); }, 1200);
+        }
+
+        function triggerHealVisual(elementId, healValue) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            el.classList.remove('animate-heal');
+            void el.offsetWidth;
+            el.classList.add('animate-heal');
+
+            const floatNum = document.createElement('div');
+            floatNum.className = `floating-heal text-2xl`;
+            floatNum.innerHTML = `+${healValue} HP`;
+
+            el.appendChild(floatNum);
+            setTimeout(() => { floatNum.remove(); }, 1200);
+        }
+
+        function triggerKiReleaseVisual(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            el.classList.remove('animate-ki-release');
+            void el.offsetWidth;
+            el.classList.add('animate-ki-release');
+        }
+
+        function addLog(message) {
+            const logBox = document.getElementById('battle-log');
+            const time = new Date().toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const entry = document.createElement('div');
+            entry.className = "py-0.5 border-b border-slate-800/40 last:border-0";
+            entry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${message}`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('battle-log').innerHTML = '<div class="text-slate-500 italic">Log limpo.</div>';
+        }
+    </script>
+</body>
+</html>

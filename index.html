@@ -388,6 +388,7 @@
         const battleLogRef = stateRef.child('battleLog');
 
         const MAX_KI = 20;
+        const PLAYER_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 533"><rect width="400" height="533" fill="#1e293b"/><circle cx="200" cy="185" r="75" fill="#64748b"/><path d="M75 470c12-92 68-135 125-135s113 43 125 135" fill="#64748b"/><text x="200" y="505" text-anchor="middle" fill="#cbd5e1" font-family="Arial" font-size="22" font-weight="bold">PERSONAGEM</text></svg>');
 
         const defaultParty = [
             { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
@@ -423,6 +424,17 @@
         let selectedDiceIdx = null;
         let assignedPlayers = new Set();
 
+        function getPlayerImage(player) {
+            const image = typeof player?.img === 'string' ? player.img.trim() : '';
+            return image || PLAYER_FALLBACK_IMAGE;
+        }
+
+        function handlePlayerImageError(imageElement) {
+            if (!imageElement || imageElement.dataset.fallbackApplied === 'true') return;
+            imageElement.dataset.fallbackApplied = 'true';
+            imageElement.src = PLAYER_FALLBACK_IMAGE;
+        }
+
         // --- SINCRONIZAÇÃO COM FIREBASE ---
         battleLogRef.on('value', (snapshot) => {
             renderBattleLog(snapshot.val() || {});
@@ -432,7 +444,14 @@
             const data = snapshot.val();
             if (data) {
                 turn = data.turn ?? 0;
-                party = data.party ?? party;
+                party = Array.isArray(data.party)
+                    ? data.party
+                    : Object.values(data.party || {});
+                party = party.map((player, idx) => ({
+                    ...defaultParty[idx],
+                    ...(player || {}),
+                    id: player?.id ?? defaultParty[idx]?.id ?? idx
+                }));
                 enemy = data.enemy ?? enemy;
                 
                 if (isFirstLoad) {
@@ -454,13 +473,40 @@
         }
 
         function syncPlayerProp(idx, prop, val) {
-            if (prop === 'name') party[idx].name = val;
+            if (prop === 'name' || prop === 'img') party[idx][prop] = val;
             else if (prop === 'crit' || prop === 'evade') party[idx][prop] = val;
             else {
                 party[idx][prop] = parseFloat(val) || 0;
                 if (prop === 'hpMax') party[idx].currentHp = Math.min(party[idx].currentHp, party[idx].hpMax);
             }
-            db.ref(`battleState/party/${idx}`).set(party[idx]);
+
+            // Atualiza somente o campo alterado. Isso evita reenviar a imagem
+            // (que pode ser um Base64 grande) a cada tecla digitada.
+            const updates = { [prop]: party[idx][prop] };
+            if (prop === 'hpMax') updates.currentHp = party[idx].currentHp;
+            db.ref(`battleState/party/${idx}`).update(updates);
+        }
+
+        function readAndOptimizeImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const source = new Image();
+                source.onload = function() {
+                    const maxDimension = 1000;
+                    const scale = Math.min(1, maxDimension / Math.max(source.naturalWidth, source.naturalHeight));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+                    canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+                    const context = canvas.getContext('2d');
+                    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+                    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                    const quality = outputType === 'image/jpeg' ? 0.86 : undefined;
+                    callback(canvas.toDataURL(outputType, quality));
+                };
+                source.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
         function adjustPlayerKi(idx, delta) {
@@ -483,7 +529,9 @@
                 enemy[prop] = parseFloat(val) || 0;
                 if (prop === 'maxHp') enemy.currentHp = Math.min(enemy.currentHp, enemy.maxHp);
             }
-            db.ref('battleState/enemy').set(enemy);
+            const updates = { [prop]: enemy[prop] };
+            if (prop === 'maxHp') updates.currentHp = enemy.currentHp;
+            db.ref('battleState/enemy').update(updates);
         }
 
         function updateUIFromState() {
@@ -491,7 +539,8 @@
 
             // Inimigo
             document.getElementById('enemy-name').value = enemy.name || 'Nome';
-            document.getElementById('enemy-img').src = enemy.img;
+            const enemyImage = document.getElementById('enemy-img');
+            if (enemyImage.src !== enemy.img) enemyImage.src = enemy.img;
             document.getElementById('enemy-max-hp').value = enemy.maxHp;
             document.getElementById('enemy-atk').value = enemy.atk;
             document.getElementById('enemy-bonus-atk').value = enemy.atkBonus;
@@ -532,7 +581,20 @@
                         hpBarFill.className = 'hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full shadow-lg shadow-emerald-500/50';
                     }
 
-                    card.querySelector('.player-avatar-img').src = p.img;
+                    const playerImage = card.querySelector('.player-avatar-img');
+                    playerImage.onerror = () => handlePlayerImageError(playerImage);
+                    const playerImageSource = getPlayerImage(p);
+                    if (playerImage.getAttribute('src') !== playerImageSource) {
+                        playerImage.src = playerImageSource;
+                    }
+
+                    card.querySelectorAll('[data-player-prop]').forEach((input) => {
+                        if (document.activeElement === input) return;
+                        const prop = input.dataset.playerProp;
+                        if (input.type === 'checkbox') input.checked = Boolean(p[prop]);
+                        else if (prop === 'healPct') input.value = p[prop] || 20;
+                        else if (p[prop] !== undefined) input.value = p[prop];
+                    });
 
                     // Atualizar Barra de Ki Gradual (0 a 20)
                     const kiVal = Number(p.ki) || 0;
@@ -580,12 +642,10 @@
         function handleEnemyFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    updateEnemyProp('img', e.target.result);
+                readAndOptimizeImage(file, function(imageData) {
+                    updateEnemyProp('img', imageData);
                     addLog(`🖼️ Imagem do Inimigo alterada.`);
-                };
-                reader.readAsDataURL(file);
+                });
             }
         }
 
@@ -600,12 +660,10 @@
         function handlePlayerFileUpload(idx, event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    syncPlayerProp(idx, 'img', e.target.result);
+                readAndOptimizeImage(file, function(imageData) {
+                    syncPlayerProp(idx, 'img', imageData);
                     addLog(`🖼️ Imagem de <b>${party[idx].name}</b> alterada.`);
-                };
-                reader.readAsDataURL(file);
+                });
             }
         }
 
@@ -779,7 +837,7 @@
                     else if (alreadyHasDice) statusText += ' (Já recebeu)';
 
                     btn.innerHTML = `
-                        <img src="${p.img}" class="w-8 h-8 rounded-full object-cover">
+                        <img src="${getPlayerImage(p)}" onerror="handlePlayerImageError(this)" class="w-8 h-8 rounded-full object-cover">
                         <span class="truncate w-full text-center">${statusText}</span>
                         <span class="text-[10px] font-mono font-bold ${kiColorClass}">Ki: ${currentKi}/${MAX_KI}</span>
                     `;
@@ -851,15 +909,15 @@
                                 <div class="flex items-center justify-between text-[11px] gap-1">
                                     <div class="flex items-center gap-1">
                                         <span class="text-slate-400 font-semibold">Dano (%):</span>
-                                        <input type="number" value="${p.skillDmg}" oninput="syncPlayerProp(${idx}, 'skillDmg', this.value)" class="w-10 bg-slate-950 border border-slate-700 rounded text-center text-amber-400 font-bold font-mono">
+                                    <input type="number" data-player-prop="skillDmg" value="${p.skillDmg}" oninput="syncPlayerProp(${idx}, 'skillDmg', this.value)" class="w-10 bg-slate-950 border border-slate-700 rounded text-center text-amber-400 font-bold font-mono">
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <label class="flex items-center gap-1 cursor-pointer text-blue-400 select-none font-bold">
-                                            <input type="checkbox" ${p.evade ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'evade', this.checked)" class="accent-blue-500 rounded">
+                                            <input type="checkbox" data-player-prop="evade" ${p.evade ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'evade', this.checked)" class="accent-blue-500 rounded">
                                             <span>Esquiva</span>
                                         </label>
                                         <label class="flex items-center gap-1 cursor-pointer text-amber-400 select-none font-bold">
-                                            <input type="checkbox" ${p.crit ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'crit', this.checked)" class="accent-amber-500 rounded">
+                                            <input type="checkbox" data-player-prop="crit" ${p.crit ? 'checked' : ''} onchange="syncPlayerProp(${idx}, 'crit', this.checked)" class="accent-amber-500 rounded">
                                             <span>Crítico</span>
                                         </label>
                                     </div>
@@ -867,11 +925,11 @@
                             </div>
 
                             <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden border border-slate-700/80 shadow-md group">
-                                <img src="${p.img}" alt="${p.name}" class="player-avatar-img w-full h-full object-cover">
+                                <img src="${getPlayerImage(p)}" onerror="handlePlayerImageError(this)" alt="${p.name}" class="player-avatar-img w-full h-full object-cover">
                                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
                                 
                                 <div class="absolute top-2 left-2 right-2 flex flex-col gap-1">
-                                    <input type="text" value="${p.name}" oninput="syncPlayerProp(${idx}, 'name', this.value)" class="w-full bg-slate-950/80 border border-slate-700/80 text-xs font-bold text-slate-100 px-2 py-0.5 rounded focus:outline-none focus:border-blue-500 shadow">
+                                    <input type="text" data-player-prop="name" value="${p.name}" oninput="syncPlayerProp(${idx}, 'name', this.value)" class="w-full bg-slate-950/80 border border-slate-700/80 text-xs font-bold text-slate-100 px-2 py-0.5 rounded focus:outline-none focus:border-blue-500 shadow">
                                     
                                     ${isLeader ? `
                                         <div class="self-start bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-md shadow-lg border border-amber-300 flex items-center gap-1">
@@ -920,7 +978,7 @@
                                 </div>
 
                                 <div class="flex items-center gap-1 pt-1">
-                                    <input type="number" value="${p.healPct || 20}" oninput="syncPlayerProp(${idx}, 'healPct', this.value)" class="w-12 bg-slate-950 border border-emerald-900/60 rounded px-1 py-0.5 text-[10px] text-emerald-400 font-mono font-bold text-center focus:outline-none focus:border-emerald-500" placeholder="%">
+                                    <input type="number" data-player-prop="healPct" value="${p.healPct || 20}" oninput="syncPlayerProp(${idx}, 'healPct', this.value)" class="w-12 bg-slate-950 border border-emerald-900/60 rounded px-1 py-0.5 text-[10px] text-emerald-400 font-mono font-bold text-center focus:outline-none focus:border-emerald-500" placeholder="%">
                                     <button onclick="healPlayer(${idx})" class="flex-1 py-1 px-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/40 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 active:scale-95 shadow">
                                         <i class="fa-solid fa-kit-medical"></i> Curar % HP
                                     </button>
@@ -941,47 +999,47 @@
                             <div class="grid grid-cols-2 gap-1.5 text-[10px]">
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">HP Max</label>
-                                    <input type="number" value="${p.hpMax}" oninput="syncPlayerProp(${idx}, 'hpMax', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="hpMax" value="${p.hpMax}" oninput="syncPlayerProp(${idx}, 'hpMax', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Red. Dano %</label>
-                                    <input type="number" value="${p.dmgRed}" oninput="syncPlayerProp(${idx}, 'dmgRed', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="dmgRed" value="${p.dmgRed}" oninput="syncPlayerProp(${idx}, 'dmgRed', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
 
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">ATK Base</label>
-                                    <input type="number" value="${p.atk}" oninput="syncPlayerProp(${idx}, 'atk', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="atk" value="${p.atk}" oninput="syncPlayerProp(${idx}, 'atk', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Bônus ATK %</label>
-                                    <input type="number" value="${p.atkBonus}" oninput="syncPlayerProp(${idx}, 'atkBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="atkBonus" value="${p.atkBonus}" oninput="syncPlayerProp(${idx}, 'atkBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
 
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Cat. ATK %</label>
-                                    <input type="number" value="${p.atkCat}" oninput="syncPlayerProp(${idx}, 'atkCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="atkCat" value="${p.atkCat}" oninput="syncPlayerProp(${idx}, 'atkCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Dom. ATK %</label>
-                                    <input type="number" value="${p.atkDom}" oninput="syncPlayerProp(${idx}, 'atkDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="atkDom" value="${p.atkDom}" oninput="syncPlayerProp(${idx}, 'atkDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
 
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">DEF Base</label>
-                                    <input type="number" value="${p.def}" oninput="syncPlayerProp(${idx}, 'def', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="def" value="${p.def}" oninput="syncPlayerProp(${idx}, 'def', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Bônus DEF %</label>
-                                    <input type="number" value="${p.defBonus}" oninput="syncPlayerProp(${idx}, 'defBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="defBonus" value="${p.defBonus}" oninput="syncPlayerProp(${idx}, 'defBonus', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
 
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Cat. DEF %</label>
-                                    <input type="number" value="${p.defCat}" oninput="syncPlayerProp(${idx}, 'defCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="defCat" value="${p.defCat}" oninput="syncPlayerProp(${idx}, 'defCat', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                                 <div class="bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
                                     <label class="text-slate-400 block font-semibold">Dom. DEF %</label>
-                                    <input type="number" value="${p.defDom}" oninput="syncPlayerProp(${idx}, 'defDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
+                                    <input type="number" data-player-prop="defDom" value="${p.defDom}" oninput="syncPlayerProp(${idx}, 'defDom', this.value)" class="w-full bg-slate-900 border border-slate-700/60 rounded px-1.5 py-0.5 text-slate-200 font-mono">
                                 </div>
                             </div>
                         </div>

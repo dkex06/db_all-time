@@ -300,7 +300,7 @@
                                 </div>
                                 <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-400 select-none bg-amber-500/10 px-2.5 py-1.5 rounded-lg border border-amber-500/30">
                                     <input type="checkbox" id="enemy-crit" onchange="updateEnemyProp('crit', this.checked)" class="accent-amber-500 w-4 h-4 rounded">
-                                    <span>Crítico (1.5x)</span>
+                                    <span>Crítico (1.25x)</span>
                                 </label>
                             </div>
 
@@ -621,7 +621,7 @@
             const atkCat = 1 + (p.atkCat / 100);
             const atkDom = 1 + (p.atkDom / 100);
             let totalAtk = (atkBaseWithBonus * atkCat) * atkDom;
-            if (p.crit) totalAtk *= 1.5;
+            if (p.crit) totalAtk *= 1.25;
 
             const defBaseWithBonus = p.def + (p.def * (p.defBonus / 100));
             const defCat = 1 + (p.defCat / 100);
@@ -633,7 +633,7 @@
 
         function calcEnemyStats() {
             let totalAtk = (enemy.atk + (enemy.atk * (enemy.atkBonus / 100))) * (1 + (enemy.atkDom / 100));
-            if (enemy.crit) totalAtk *= 1.5;
+            if (enemy.crit) totalAtk *= 1.25;
             let totalDef = (enemy.def + (enemy.def * (enemy.defBonus / 100))) * (1 + (enemy.defDom / 100));
             return { totalAtk: Math.round(totalAtk), totalDef: Math.round(totalDef) };
         }

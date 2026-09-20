@@ -253,7 +253,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                             <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
                                 <label class="text-slate-400 font-semibold block">HP Max</label>
-                                <input type="number" id="enemy-max-hp" value="40000" oninput="updateEnemyProp('maxHp', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
+                                <input type="number" id="enemy-max-hp" value="50000" oninput="updateEnemyProp('maxHp', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono focus:border-red-500 outline-none">
                             </div>
 
                             <div class="bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 space-y-1">
@@ -391,17 +391,17 @@
         const PLAYER_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 533"><rect width="400" height="533" fill="#1e293b"/><circle cx="200" cy="185" r="75" fill="#64748b"/><path d="M75 470c12-92 68-135 125-135s113 43 125 135" fill="#64748b"/><text x="200" y="505" text-anchor="middle" fill="#cbd5e1" font-family="Arial" font-size="22" font-weight="bold">PERSONAGEM</text></svg>');
 
         const defaultParty = [
-            { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
-            { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
-            { id: 2, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
-            { id: 3, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
-            { id: 4, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 8000, hpMax: 8000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 }
+            { id: 0, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 10000, hpMax: 10000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 1, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 10000, hpMax: 10000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 2, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 10000, hpMax: 10000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 3, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 10000, hpMax: 10000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 },
+            { id: 4, name: "Nome", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt8OSFTAqhaBjCBiw5_EkLGTDCzBxmTUpgISQybFGJMliYU7Y1kxoSDATb&s=10", currentHp: 10000, hpMax: 10000, hpBonus: 0, hpCat: 0, atk: 4000, atkBonus: 0, atkCat: 0, atkDom: 0, def: 3000, defBonus: 0, defCat: 0, defDom: 0, dmgRed: 0, skillDmg: 100, crit: false, evade: false, healPct: 20, ki: 0 }
         ];
 
         const defaultEnemy = {
             name: "Nome",
-            currentHp: 40000,
-            maxHp: 40000,
+            currentHp: 50000,
+            maxHp: 50000,
             atk: 4000,
             atkBonus: 0,
             atkDom: 0,
